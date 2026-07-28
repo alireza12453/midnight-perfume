@@ -23,7 +23,6 @@ export default function ProductPage() {
   const [notFound, setNotFound] = useState(false);
   const [added, setAdded] = useState(false);
 
-  // فرم نظر
   const [reviewForm, setReviewForm] = useState({
     user_name: "",
     rating: 5,
@@ -79,6 +78,25 @@ export default function ProductPage() {
 
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  // خرید مستقیم از طریق اینستاگرام
+  const handleBuyInstagram = () => {
+    if (!product) return;
+
+    const message = `سلام، می‌خوام این محصول رو سفارش بدم:
+
+📦 نام محصول: ${product.name}
+🏷️ برند: ${product.brand || "-"}
+💰 قیمت: ${formatPrice(product.price)} تومان
+📏 حجم: ${product.volume || "-"}
+
+لطفاً راهنمایی کنید.`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const instagramUrl = `https://ig.me/m/midnight_perfume1?text=${encodedMessage}`;
+
+    window.open(instagramUrl, "_blank");
   };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
@@ -202,19 +220,24 @@ export default function ProductPage() {
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 mb-10">
+            {/* دکمه‌های خرید */}
+            <div className="flex flex-col gap-3 mb-10">
+              <button
+                onClick={handleBuyInstagram}
+                className="w-full bg-[#d4af37] text-black py-4 rounded font-medium hover:bg-[#f0d78c] transition-colors"
+              >
+                خرید از طریق اینستاگرام
+              </button>
+
               <button
                 onClick={handleAddToCart}
-                className={`flex-1 py-4 rounded font-medium transition-colors ${
+                className={`w-full py-3 rounded font-medium border transition-colors ${
                   added
-                    ? "bg-green-600 text-white"
-                    : "bg-[#d4af37] text-black hover:bg-[#f0d78c]"
+                    ? "border-green-600 text-green-400"
+                    : "border-[#2a2a2a] hover:border-[#d4af37]"
                 }`}
               >
                 {added ? "✓ به سبد اضافه شد" : "افزودن به سبد خرید"}
-              </button>
-              <button className="px-6 py-4 border border-[#2a2a2a] rounded hover:border-[#d4af37] transition-colors">
-                ♡ علاقه‌مندی
               </button>
             </div>
 
