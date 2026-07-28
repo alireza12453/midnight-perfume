@@ -23,6 +23,11 @@ export default function ProductPage() {
   const [notFound, setNotFound] = useState(false);
   const [added, setAdded] = useState(false);
 
+  // مودال سفارش اینستاگرام
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderText, setOrderText] = useState("");
+  const [copied, setCopied] = useState(false);
+
   const [reviewForm, setReviewForm] = useState({
     user_name: "",
     rating: 5,
@@ -54,10 +59,7 @@ export default function ProductPage() {
         .eq("product_id", id)
         .order("created_at", { ascending: false });
 
-      if (reviewsData) {
-        setReviews(reviewsData);
-      }
-
+      if (reviewsData) setReviews(reviewsData);
       setLoading(false);
     };
 
@@ -66,7 +68,6 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
-
     addItem({
       id: product.id,
       name: product.name,
@@ -75,16 +76,15 @@ export default function ProductPage() {
       image_url: product.image_url,
       volume: product.volume,
     });
-
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
 
-  // خرید مستقیم از طریق اینستاگرام
+  // باز کردن مودال سفارش
   const handleBuyInstagram = () => {
     if (!product) return;
 
-    const message = `سلام، می‌خوام این محصول رو سفارش بدم:
+    const text = `سلام، می‌خوام این محصول رو سفارش بدم:
 
 📦 نام محصول: ${product.name}
 🏷️ برند: ${product.brand || "-"}
@@ -93,10 +93,28 @@ export default function ProductPage() {
 
 لطفاً راهنمایی کنید.`;
 
-    const encodedMessage = encodeURIComponent(message);
-    const instagramUrl = `https://ig.me/m/midnight_perfume1?text=${encodedMessage}`;
+    setOrderText(text);
+    setShowOrderModal(true);
+    setCopied(false);
+  };
 
-    window.open(instagramUrl, "_blank");
+  // کپی کردن متن
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(orderText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (err) {
+      // اگر clipboard کار نکرد، از روش قدیمی استفاده کن
+      const textArea = document.createElement("textarea");
+      textArea.value = orderText;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
@@ -124,18 +142,13 @@ export default function ProductPage() {
     } else {
       setReviewMessage("✅ نظر شما با موفقیت ثبت شد");
       setReviewForm({ user_name: "", rating: 5, comment: "" });
-
       const { data: reviewsData } = await supabase
         .from("reviews")
         .select("*")
         .eq("product_id", id)
         .order("created_at", { ascending: false });
-
-      if (reviewsData) {
-        setReviews(reviewsData);
-      }
+      if (reviewsData) setReviews(reviewsData);
     }
-
     setSubmitting(false);
   };
 
@@ -151,9 +164,7 @@ export default function ProductPage() {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center gap-4">
         <p className="text-xl">محصول یافت نشد</p>
-        <Link href="/products" className="text-[#d4af37] hover:underline">
-          بازگشت به محصولات
-        </Link>
+        <Link href="/products" className="text-[#d4af37] hover:underline">بازگشت به محصولات</Link>
       </div>
     );
   }
@@ -174,21 +185,12 @@ export default function ProductPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
           <div className="aspect-[3/4] bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] relative overflow-hidden">
             {product.image_url ? (
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+              <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-gray-600">
-                بدون تصویر
-              </div>
+              <div className="absolute inset-0 flex items-center justify-center text-gray-600">بدون تصویر</div>
             )}
-
             {product.is_new && (
-              <div className="absolute top-4 right-4 bg-[#d4af37] text-black text-xs px-3 py-1 rounded font-medium">
-                جدید
-              </div>
+              <div className="absolute top-4 right-4 bg-[#d4af37] text-black text-xs px-3 py-1 rounded font-medium">جدید</div>
             )}
           </div>
 
@@ -198,29 +200,19 @@ export default function ProductPage() {
 
             <div className="flex items-center gap-3 text-sm text-gray-400 mb-6">
               {product.gender && <span>{product.gender}</span>}
-              {product.volume && (
-                <>
-                  <span>•</span>
-                  <span>{product.volume}</span>
-                </>
-              )}
+              {product.volume && (<><span>•</span><span>{product.volume}</span></>)}
             </div>
 
             <div className="mb-8">
               <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-[#d4af37]">
-                  {formatPrice(product.price)}
-                </span>
+                <span className="text-3xl font-bold text-[#d4af37]">{formatPrice(product.price)}</span>
                 <span className="text-gray-400">تومان</span>
               </div>
               {product.old_price && (
-                <p className="text-gray-500 line-through mt-1">
-                  {formatPrice(product.old_price)} تومان
-                </p>
+                <p className="text-gray-500 line-through mt-1">{formatPrice(product.old_price)} تومان</p>
               )}
             </div>
 
-            {/* دکمه‌های خرید */}
             <div className="flex flex-col gap-3 mb-10">
               <button
                 onClick={handleBuyInstagram}
@@ -232,9 +224,7 @@ export default function ProductPage() {
               <button
                 onClick={handleAddToCart}
                 className={`w-full py-3 rounded font-medium border transition-colors ${
-                  added
-                    ? "border-green-600 text-green-400"
-                    : "border-[#2a2a2a] hover:border-[#d4af37]"
+                  added ? "border-green-600 text-green-400" : "border-[#2a2a2a] hover:border-[#d4af37]"
                 }`}
               >
                 {added ? "✓ به سبد اضافه شد" : "افزودن به سبد خرید"}
@@ -244,9 +234,7 @@ export default function ProductPage() {
             {product.description && (
               <div className="mb-8">
                 <h3 className="text-lg font-medium mb-3 text-[#d4af37]">توضیحات</h3>
-                <p className="text-gray-300 leading-relaxed text-sm">
-                  {product.description}
-                </p>
+                <p className="text-gray-300 leading-relaxed text-sm">{product.description}</p>
               </div>
             )}
 
@@ -254,24 +242,9 @@ export default function ProductPage() {
               <div className="border border-[#2a2a2a] rounded-lg p-5 bg-[#111111]">
                 <h3 className="text-lg font-medium mb-4 text-[#d4af37]">نت‌های عطر</h3>
                 <div className="space-y-3 text-sm">
-                  {product.notes_top && (
-                    <div className="flex">
-                      <span className="w-24 text-gray-500">نت اولیه:</span>
-                      <span>{product.notes_top}</span>
-                    </div>
-                  )}
-                  {product.notes_middle && (
-                    <div className="flex">
-                      <span className="w-24 text-gray-500">نت میانی:</span>
-                      <span>{product.notes_middle}</span>
-                    </div>
-                  )}
-                  {product.notes_base && (
-                    <div className="flex">
-                      <span className="w-24 text-gray-500">نت پایه:</span>
-                      <span>{product.notes_base}</span>
-                    </div>
-                  )}
+                  {product.notes_top && <div className="flex"><span className="w-24 text-gray-500">نت اولیه:</span><span>{product.notes_top}</span></div>}
+                  {product.notes_middle && <div className="flex"><span className="w-24 text-gray-500">نت میانی:</span><span>{product.notes_middle}</span></div>}
+                  {product.notes_base && <div className="flex"><span className="w-24 text-gray-500">نت پایه:</span><span>{product.notes_base}</span></div>}
                 </div>
               </div>
             )}
@@ -281,17 +254,13 @@ export default function ProductPage() {
         {/* نظرات */}
         <section className="mt-20">
           <h2 className="text-2xl font-bold mb-8">
-            نظرات کاربران{" "}
-            <span className="text-[#d4af37]">({reviews.length})</span>
+            نظرات کاربران <span className="text-[#d4af37]">({reviews.length})</span>
           </h2>
 
           <div className="space-y-6 mb-12">
             {reviews.length > 0 ? (
               reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="border border-[#2a2a2a] rounded-lg p-5 bg-[#111111]"
-                >
+                <div key={review.id} className="border border-[#2a2a2a] rounded-lg p-5 bg-[#111111]">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37] font-medium">
@@ -299,19 +268,14 @@ export default function ProductPage() {
                       </div>
                       <div>
                         <p className="font-medium">{review.user_name}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(review.created_at).toLocaleDateString("fa-IR")}
-                        </p>
+                        <p className="text-xs text-gray-500">{new Date(review.created_at).toLocaleDateString("fa-IR")}</p>
                       </div>
                     </div>
                     <div className="text-[#d4af37]">
-                      {"★".repeat(review.rating || 0)}
-                      {"☆".repeat(5 - (review.rating || 0))}
+                      {"★".repeat(review.rating || 0)}{"☆".repeat(5 - (review.rating || 0))}
                     </div>
                   </div>
-                  <p className="text-gray-300 text-sm leading-relaxed">
-                    {review.comment}
-                  </p>
+                  <p className="text-gray-300 text-sm leading-relaxed">{review.comment}</p>
                 </div>
               ))
             ) : (
@@ -320,24 +284,18 @@ export default function ProductPage() {
           </div>
 
           <div className="border border-[#2a2a2a] rounded-lg p-6 bg-[#111111]">
-            <h3 className="text-lg font-medium mb-4 text-[#d4af37]">
-              نظر خود را بنویسید
-            </h3>
-
+            <h3 className="text-lg font-medium mb-4 text-[#d4af37]">نظر خود را بنویسید</h3>
             <form onSubmit={handleReviewSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">نام شما *</label>
                 <input
                   type="text"
                   value={reviewForm.user_name}
-                  onChange={(e) =>
-                    setReviewForm({ ...reviewForm, user_name: e.target.value })
-                  }
+                  onChange={(e) => setReviewForm({ ...reviewForm, user_name: e.target.value })}
                   className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded px-4 py-3 text-sm focus:outline-none focus:border-[#d4af37]"
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-sm text-gray-400 mb-2">امتیاز</label>
                 <div className="flex gap-2">
@@ -346,39 +304,28 @@ export default function ProductPage() {
                       key={star}
                       type="button"
                       onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                      className={`text-2xl transition-colors ${
-                        star <= reviewForm.rating ? "text-[#d4af37]" : "text-gray-600"
-                      }`}
+                      className={`text-2xl transition-colors ${star <= reviewForm.rating ? "text-[#d4af37]" : "text-gray-600"}`}
                     >
                       ★
                     </button>
                   ))}
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm text-gray-400 mb-2">متن نظر *</label>
                 <textarea
                   value={reviewForm.comment}
-                  onChange={(e) =>
-                    setReviewForm({ ...reviewForm, comment: e.target.value })
-                  }
+                  onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
                   rows={4}
                   className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded px-4 py-3 text-sm focus:outline-none focus:border-[#d4af37] resize-none"
                   required
                 />
               </div>
-
               {reviewMessage && (
-                <p
-                  className={`text-sm ${
-                    reviewMessage.includes("✅") ? "text-green-400" : "text-red-400"
-                  }`}
-                >
+                <p className={`text-sm ${reviewMessage.includes("✅") ? "text-green-400" : "text-red-400"}`}>
                   {reviewMessage}
                 </p>
               )}
-
               <button
                 type="submit"
                 disabled={submitting}
@@ -390,6 +337,48 @@ export default function ProductPage() {
           </div>
         </section>
       </main>
+
+      {/* مودال سفارش اینستاگرام */}
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-[#d4af37] mb-4">سفارش از طریق اینستاگرام</h3>
+            
+            <p className="text-sm text-gray-400 mb-3">
+              متن زیر رو کپی کن و داخل دایرکت پیج بفرست:
+            </p>
+
+            <div className="bg-[#0a0a0a] border border-[#2a2a2a] rounded p-4 text-sm whitespace-pre-line mb-4 max-h-48 overflow-y-auto">
+              {orderText}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleCopy}
+                className="w-full bg-[#d4af37] text-black py-3 rounded font-medium hover:bg-[#f0d78c] transition-colors"
+              >
+                {copied ? "✓ متن کپی شد!" : "کپی کردن متن"}
+              </button>
+
+              <a
+                href="https://instagram.com/midnight_perfume1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full border border-[#d4af37] text-[#d4af37] py-3 rounded font-medium text-center hover:bg-[#d4af37]/10 transition-colors"
+              >
+                باز کردن اینستاگرام
+              </a>
+
+              <button
+                onClick={() => setShowOrderModal(false)}
+                className="w-full text-gray-400 py-2 text-sm hover:text-white transition-colors"
+              >
+                بستن
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
