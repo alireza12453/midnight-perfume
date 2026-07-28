@@ -22,6 +22,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [added, setAdded] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const [reviewForm, setReviewForm] = useState({
     user_name: "",
@@ -75,8 +76,8 @@ export default function ProductPage() {
     setTimeout(() => setAdded(false), 2000);
   };
 
-  // خرید با لینک ig.me
-  const handleBuyInstagram = () => {
+  // خرید از طریق اینستاگرام (کپی متن + باز کردن پیج)
+  const handleBuyInstagram = async () => {
     if (!product) return;
 
     const message = `سلام، می‌خوام این محصول رو سفارش بدم:
@@ -88,8 +89,26 @@ export default function ProductPage() {
 
 لطفاً راهنمایی کنید.`;
 
-    const url = `https://ig.me/m/midnight_perfume1?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    try {
+      await navigator.clipboard.writeText(message);
+    } catch (err) {
+      // روش جایگزین برای گوشی‌هایی که clipboard رو پشتیبانی نمی‌کنن
+      const textArea = document.createElement("textarea");
+      textArea.value = message;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+
+    // نمایش پیام موفقیت
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 4000);
+
+    // باز کردن اینستاگرام
+    setTimeout(() => {
+      window.open("https://instagram.com/midnight_perfume1", "_blank");
+    }, 300);
   };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
@@ -314,6 +333,13 @@ export default function ProductPage() {
           </div>
         </section>
       </main>
+
+      {/* پیام موفقیت کپی */}
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#d4af37] text-black px-6 py-3 rounded-lg shadow-lg z-50 text-sm font-medium">
+          ✓ متن سفارش کپی شد! داخل دایرکت Paste کنید
+        </div>
+      )}
 
       <Footer />
     </div>
