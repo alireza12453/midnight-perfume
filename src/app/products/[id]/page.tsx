@@ -23,11 +23,6 @@ export default function ProductPage() {
   const [notFound, setNotFound] = useState(false);
   const [added, setAdded] = useState(false);
 
-  // مودال سفارش اینستاگرام
-  const [showOrderModal, setShowOrderModal] = useState(false);
-  const [orderText, setOrderText] = useState("");
-  const [copied, setCopied] = useState(false);
-
   const [reviewForm, setReviewForm] = useState({
     user_name: "",
     rating: 5,
@@ -80,11 +75,11 @@ export default function ProductPage() {
     setTimeout(() => setAdded(false), 2000);
   };
 
-  // باز کردن مودال سفارش
+  // خرید با لینک ig.me
   const handleBuyInstagram = () => {
     if (!product) return;
 
-    const text = `سلام، می‌خوام این محصول رو سفارش بدم:
+    const message = `سلام، می‌خوام این محصول رو سفارش بدم:
 
 📦 نام محصول: ${product.name}
 🏷️ برند: ${product.brand || "-"}
@@ -93,28 +88,8 @@ export default function ProductPage() {
 
 لطفاً راهنمایی کنید.`;
 
-    setOrderText(text);
-    setShowOrderModal(true);
-    setCopied(false);
-  };
-
-  // کپی کردن متن
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(orderText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch (err) {
-      // اگر clipboard کار نکرد، از روش قدیمی استفاده کن
-      const textArea = document.createElement("textarea");
-      textArea.value = orderText;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    }
+    const url = `https://ig.me/m/midnight_perfume1?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
   };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
@@ -142,11 +117,13 @@ export default function ProductPage() {
     } else {
       setReviewMessage("✅ نظر شما با موفقیت ثبت شد");
       setReviewForm({ user_name: "", rating: 5, comment: "" });
+
       const { data: reviewsData } = await supabase
         .from("reviews")
         .select("*")
         .eq("product_id", id)
         .order("created_at", { ascending: false });
+
       if (reviewsData) setReviews(reviewsData);
     }
     setSubmitting(false);
@@ -337,48 +314,6 @@ export default function ProductPage() {
           </div>
         </section>
       </main>
-
-      {/* مودال سفارش اینستاگرام */}
-      {showOrderModal && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium text-[#d4af37] mb-4">سفارش از طریق اینستاگرام</h3>
-            
-            <p className="text-sm text-gray-400 mb-3">
-              متن زیر رو کپی کن و داخل دایرکت پیج بفرست:
-            </p>
-
-            <div className="bg-[#0a0a0a] border border-[#2a2a2a] rounded p-4 text-sm whitespace-pre-line mb-4 max-h-48 overflow-y-auto">
-              {orderText}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={handleCopy}
-                className="w-full bg-[#d4af37] text-black py-3 rounded font-medium hover:bg-[#f0d78c] transition-colors"
-              >
-                {copied ? "✓ متن کپی شد!" : "کپی کردن متن"}
-              </button>
-
-              <a
-                href="https://instagram.com/midnight_perfume1"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full border border-[#d4af37] text-[#d4af37] py-3 rounded font-medium text-center hover:bg-[#d4af37]/10 transition-colors"
-              >
-                باز کردن اینستاگرام
-              </a>
-
-              <button
-                onClick={() => setShowOrderModal(false)}
-                className="w-full text-gray-400 py-2 text-sm hover:text-white transition-colors"
-              >
-                بستن
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Footer />
     </div>
